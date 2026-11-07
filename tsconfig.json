@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "target": "es6",
+    "incremental": true,
+    "module": "esnext",
+    "noImplicitAny": false, // السماح باستخدام any بدون تحذيرات
+    "skipLibCheck": true, // تجاهل الأخطاء في ملفات المكتبات الخارجية
+    "forceConsistentCasingInFileNames": false,
+    "jsx": "react-jsx",
+    "isolatedModules": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "allowJs": true,
+    "noEmit": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
