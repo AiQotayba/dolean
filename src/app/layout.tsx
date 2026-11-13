@@ -1,4 +1,5 @@
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "@/components/index.css";
 
 import type { Metadata } from 'next';
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <body className="bg-[#f8f9fc] text-slate-900 antialiased min-h-screen flex flex-col">
                 <ProgressBarProvider />
                 <Analytics />
+                <SpeedInsights />
                 <Providers>
                     {children}
                 </Providers>

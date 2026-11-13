@@ -38,7 +38,7 @@ export default function Nav() {
             <div className="hidden md:flex items-center gap-1">
               <NavLink href="/" text="الرئيسية" icon={<Home className="w-4 h-4" />} />
               <NavLink href="/courses" text="الدورات" icon={<Compass className="w-4 h-4" />} />
-              <NavLink href="/how-it-works" text="كيف نعمل؟" icon={<HelpCircle className="w-4 h-4" />} />
+              <NavLink href="/how-it-works" text="كيف تستفيد؟" icon={<HelpCircle className="w-4 h-4" />} />
               <NavLink href="/about" text="من نحن" icon={<Info className="w-4 h-4" />} />
             </div>
           </div>
@@ -94,7 +94,7 @@ export default function Nav() {
             />
             <MobileNavLink
               href="/how-it-works"
-              text="كيف نعمل؟"
+              text="كيف تستفيد؟"
               icon={<HelpCircle className="w-4 h-4" />}
               onClick={() => setMobileMenuOpen(false)}
             />

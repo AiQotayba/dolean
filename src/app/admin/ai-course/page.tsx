@@ -6,7 +6,7 @@ import AddDefCourse from "./AddDefCourse";
 import AddCourse from "./AddCourse";
 import SendMessages from "./SendMessages";
 import Link from "next/link";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export const CourseContext = createContext<any>({});
 
@@ -36,7 +36,7 @@ function AiCourseContent() {
   return (
     <CourseContext.Provider value={{ Course, setCourse, draftId }}>
       <Header
-        title={draftId ? "اعتماد وتوليد الدورة من مسودة (AI)" : "توليد وإضافة دورة بالذكاء الاصطناعي"}
+        title={draftId ? "اعتماد مسودة الدورة" : "إضافة دورة جديدة"}
         to="/admin/def-courses"
       />
       <View />
@@ -70,18 +70,9 @@ const Header = ({ to = "/admin/def-courses", title }: { to?: string; title: stri
           <ArrowRight className="w-4 h-4" />
         </Link>
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
-              {title}
-            </h1>
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-purple-50 text-purple-700 border border-purple-200/60">
-              <Sparkles className="w-3 h-3 text-amber-500" />
-              Gemini 2.5 Flash
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            استخراج تلقائي لهيكل الدورة ومراجعتها ثم نشرها مباشرة في المنصة
-          </p>
+          <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+            {title}
+          </h1>
         </div>
       </div>
 

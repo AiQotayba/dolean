@@ -54,6 +54,9 @@ export async function GET(req: NextRequest) {
       sortOption['pricing.cost'] = sortOrder;
     } else {
       sortOption[sortField] = sortOrder;
+      if (sortField !== '_id') {
+        sortOption._id = -1;
+      }
     }
 
     const skip = (page - 1) * limit;
@@ -92,7 +95,43 @@ export async function POST(req: NextRequest) {
     const user = await getAuthUser(req);
     await connectToDatabase();
 
-    // إعداد الجهة الناشرة إن لم تكن محددة
+    // 1. تنظيف وتأمين حقل الصورة لمنع أخطاء Cast to string (مثل كائن FileList { '0': {} })
+    if (typeof body.image !== 'string' || body.image.trim() === '[object Object]') {
+      body.image = '';
+    } else {
+      body.image = body.image.trim();
+    }
+
+    // 2. معالجة الروابط
+    if (typeof body.links === 'string') {
+      body.links = body.links.split(/[\n,]+/).map((l: string) => l.trim()).filter(Boolean);
+    } else if (!Array.isArray(body.links)) {
+      body.links = [];
+    }
+
+    // 3. معالجة الكلمات المفتاحية
+    if (typeof body.keys === 'string') {
+      body.keys = body.keys.split(/[\n,]+/).map((k: string) => k.trim()).filter(Boolean);
+    } else if (!Array.isArray(body.keys)) {
+      body.keys = [];
+    }
+
+    // 4. مطابقة الفئة العمرية
+    if (!body.ageEligibility && body.age) {
+      body.ageEligibility = {
+        start: Number(body.age.start) || 0,
+        end: Number(body.age.end) || 100,
+      };
+    }
+
+    // 5. مطابقة الجنسيات
+    if (!body.nationalityEligibility && body.nationality) {
+      body.nationalityEligibility = Array.isArray(body.nationality)
+        ? body.nationality
+        : [body.nationality];
+    }
+
+    // 6. إعداد الجهة الناشرة إن لم تكن محددة
     if (!body.publishingEntity) {
       body.publishingEntity = {
         publisherType: 'platform',
@@ -101,7 +140,7 @@ export async function POST(req: NextRequest) {
       };
     }
 
-    // إعداد الجهة المقدمة إن لم تكن محددة
+    // 7. إعداد الجهة المقدمة إن لم تكن محددة
     if (!body.providingEntity) {
       body.providingEntity = {
         name: body.center || 'جهة تدريبية',

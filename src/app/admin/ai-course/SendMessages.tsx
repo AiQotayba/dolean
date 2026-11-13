@@ -6,12 +6,20 @@ import TableApp from "./tableUsers";
 import { FormProvider, useForm } from 'react-hook-form'
 import FormField from '@/components/Element/FormField';
 import JsCookie from 'js-cookie';
+import Link from 'next/link';
+import { Send } from 'lucide-react';
+
+const DEFAULT_MSG = `مرحبا {{name}} كيف حالك 
+نحن منصة تلاقي، سجلتم لدينا سابقاً للبحث عن تدريبات تناسبكم.
+تتوفر حالياً هذه الدورة {{title}} التي قد تهمكم، ويمكنكم الاطلاع على التفاصيل والتسجيل عبر الرابط:
+> رابط الدورة:
+https://talaqi.vercel.app/courses/{{_id}}`;
 
 const SendMessages = ({ nextStep }: any) => {
 
     const methods = useForm();
     let { handleSubmit, reset } = methods;
-    let id: any = useMemo(() => localStorage.getItem("course"), [])
+    let id: any = useMemo(() => typeof window !== "undefined" ? localStorage.getItem("course") : null, [])
     let [users, setUser] = useState([])
     let [usersEnd, setUserEnd] = useState([])
     let [course, setCourse] = useState([])
@@ -48,8 +56,22 @@ const SendMessages = ({ nextStep }: any) => {
     };
 
     return (
-        <div className="w-full flex flex-col md:flex-row mx-auto p-4 rtl text-slate-900  justify-center  ">
+        <div className="w-full flex flex-col md:flex-row mx-auto p-4 rtl text-slate-900 justify-center">
             <div className="max-w-[500px] w-full">
+                {id && (
+                    <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-900">
+                            نظام إرسال تدريبات مخصص عبر واتساب
+                        </span>
+                        <Link
+                            href={`/admin/send-training?courseId=${id}`}
+                            className="px-3 py-1.5 bg-[#123D3A] text-white rounded-lg text-xs font-bold flex items-center gap-1 hover:bg-[#0E2F2D] transition"
+                        >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>فتح نظام الإرسال</span>
+                        </Link>
+                    </div>
+                )}
                 <OneCourse data={course} />
 
                 <FormProvider {...methods}>
@@ -66,7 +88,7 @@ const SendMessages = ({ nextStep }: any) => {
                                 as="textarea"
                                 rows="8"
                                 placeholder="أدخل نص الرسالة"
-                                defaultValue={msg}
+                                defaultValue={DEFAULT_MSG}
                                 validation={{ required: 'وصف الدورة مطلوب' }}
                             />
 
@@ -112,10 +134,3 @@ export function OneCourse({ data }: any) {
         </div >
     );
 }
-let msg = `
-مرحبا {{name}} كيف حالك 
-نحن منصة تلاقي، سجلتم لدينا سابقاً للبحث عن تدريبات تناسبكم.
-تتوفر حالياً هذه الدورة {{title}} التي قد تهمكم، ويمكنكم الاطلاع على التفاصيل والتسجيل عبر الرابط:
-> رابط الدورة:
-https://talaqi.vercel.app/courses/{{_id}}
-`

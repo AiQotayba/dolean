@@ -49,7 +49,7 @@ export default async function Home() {
             </Suspense>
 
             {/* 4. Training Category Sections under Courses */}
-            {sections.length > 0 && <CategorySections sections={sections} />}
+            {/* {sections.length > 0 && <CategorySections sections={sections} />} */}
 
             {/* 5. How It Works (Explaining the 3 Simple Steps) */}
             <HowItWorks />
@@ -62,7 +62,7 @@ export default async function Home() {
                 <div className="bg-[#123D3A] rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-right shadow-2xl text-white relative overflow-hidden border border-[#D58A38]/30">
                     <div className="absolute -top-10 -left-10 w-48 h-48 bg-[#D58A38]/15 rounded-full blur-2xl pointer-events-none" />
                     <div className="absolute bottom-0 right-1/3 w-40 h-40 bg-[#206C63]/30 rounded-full blur-2xl pointer-events-none" />
-                    
+
                     <div className="flex items-center gap-4 relative z-10">
                         <div className="w-12 h-12 rounded-2xl bg-[#D58A38]/20 border border-[#D58A38]/30 text-[#D58A38] flex items-center justify-center shrink-0 shadow-inner">
                             <Share2 className="w-6 h-6 text-[#D58A38]" />

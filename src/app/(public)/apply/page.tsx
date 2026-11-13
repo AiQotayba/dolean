@@ -11,17 +11,20 @@ import {
   ArrowRight,
   User,
   Phone,
+  Mail,
   MapPin,
   Check,
   Sparkles,
   DollarSign,
   Gift,
-  BookOpen
+  BookOpen,
+  ShieldCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import CountryPhoneInput from '@/components/forms-client/CountryPhoneInput';
 
 // 4 مهارات رئيسية شائعة للاختيار التفاعلي المتعدد (حد أقصى 4 مقترحات تطبيقاً لفلسفة المنصة)
 const POPULAR_SKILLS = [
@@ -66,6 +69,10 @@ function ApplyForm() {
   // 4. Contact Info
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+
+  // 5. Terms acceptance
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // State management
   const [loading, setLoading] = useState(false);
@@ -126,9 +133,14 @@ function ApplyForm() {
         return;
       }
       if (!phone.trim() || phone.replace(/\D/g, '').length < 7) {
-        setErrorMsg('يرجى إدخال رقم واتساب صحيح للتواصل معك فور توفر مقعد.');
+        setErrorMsg('يرجى إدخال رقم واتساب صحيح للتواصل معك.');
         return;
       }
+    }
+
+    if (!termsAccepted) {
+      setErrorMsg('يرجى الموافقة على شروط الاستخدام للمتابعة وإرسال الطلب.');
+      return;
     }
 
     setLoading(true);
@@ -141,12 +153,15 @@ function ApplyForm() {
         city: finalLocation,
         freeCourses: pricingPreference === 'free' || pricingPreference === 'both',
         paidCourses: pricingPreference === 'paid' || pricingPreference === 'both',
-        paidCoursesLimit: pricingPreference === 'free' ? 0 : paidLimit,
+        paidCoursesLimit: pricingPreference === 'free' ? 0 : Math.max(5, Number(paidLimit) || 5),
       };
 
       if (!isLoggedIn) {
         payload.fullName = fullName.trim();
         payload.phone = phone.trim();
+        if (email.trim()) {
+          payload.email = email.trim();
+        }
       }
 
       await axios.post('/api/student/apply', payload);
@@ -170,7 +185,7 @@ function ApplyForm() {
           تم تسجيل طلبك التدريبي بنجاح!
         </h2>
         <p className="text-xs sm:text-sm text-slate-600 mb-6 max-w-md mx-auto leading-relaxed">
-          طلبك لكافة التدريبات: <strong className="text-[#D58A38]">"{registeredInterests}"</strong> في <strong className="text-slate-800">{finalLocation}</strong> تم تسجيله في نظام المطابقة مع المراكز المعتمدة.
+          طلبك لكافة التدريبات: <strong className="text-[#D58A38]">"{registeredInterests}"</strong> في <strong className="text-slate-800">{finalLocation}</strong> تم تسجيله لفهم احتياجك والمساهمة في استكشاف فرص تدريبية مناسبة.
         </p>
 
         <div className="p-4 rounded-2xl bg-[#F8F8F5] border border-slate-200/80 mb-6 text-right space-y-2 text-xs">
@@ -291,8 +306,8 @@ function ApplyForm() {
                     type="button"
                     onClick={() => toggleSkill(skill)}
                     className={`inline-flex items-center gap-1.5 text-xs sm:text-sm px-4 py-2.5 rounded-xl border transition-all cursor-pointer font-bold active:scale-95 ${isSelected
-                        ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-xs'
-                        : 'bg-white hover:bg-slate-100/90 text-slate-700 border-[#A9B5B0]/50'
+                      ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-xs'
+                      : 'bg-white hover:bg-slate-100/90 text-slate-700 border-[#A9B5B0]/50'
                       }`}
                   >
                     {isSelected && <Check className="w-3.5 h-3.5 text-amber-300 stroke-[3]" />}
@@ -338,8 +353,8 @@ function ApplyForm() {
                       if (loc !== 'أخرى') setCustomLocation('');
                     }}
                     className={`text-xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${isSelected
-                        ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-2xs'
-                        : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                      ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-2xs'
+                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                       }`}
                   >
                     {loc}
@@ -350,8 +365,8 @@ function ApplyForm() {
                 type="button"
                 onClick={() => setSelectedLocation('أخرى')}
                 className={`text-xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${selectedLocation === 'أخرى'
-                    ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-2xs'
-                    : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                  ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-2xs'
+                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                   }`}
               >
                 منطقة أخرى...
@@ -382,8 +397,8 @@ function ApplyForm() {
                 type="button"
                 onClick={() => setPricingPreference('free')}
                 className={`p-3 rounded-2xl border text-right transition cursor-pointer flex flex-col justify-between gap-1.5 ${pricingPreference === 'free'
-                    ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/70'
+                  ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/70'
                   }`}
               >
                 <div className="flex items-center justify-between">
@@ -399,8 +414,8 @@ function ApplyForm() {
                 type="button"
                 onClick={() => setPricingPreference('paid')}
                 className={`p-3 rounded-2xl border text-right transition cursor-pointer flex flex-col justify-between gap-1.5 ${pricingPreference === 'paid'
-                    ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/70'
+                  ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/70'
                   }`}
               >
                 <div className="flex items-center justify-between">
@@ -416,8 +431,8 @@ function ApplyForm() {
                 type="button"
                 onClick={() => setPricingPreference('both')}
                 className={`p-3 rounded-2xl border text-right transition cursor-pointer flex flex-col justify-between gap-1.5 ${pricingPreference === 'both'
-                    ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-xs'
-                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/70'
+                  ? 'bg-[#123D3A] text-white border-[#123D3A] shadow-xs'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100/70'
                   }`}
               >
                 <div className="flex items-center justify-between">
@@ -442,14 +457,14 @@ function ApplyForm() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {[10, 20, 35, 50].map((amount) => (
+                  {[5, 10, 20, 50].map((amount) => (
                     <button
                       key={amount}
                       type="button"
                       onClick={() => setPaidLimit(amount)}
                       className={`flex-1 py-1.5 rounded-xl text-xs font-bold border transition ${paidLimit === amount
-                          ? 'bg-[#123D3A] text-white border-[#123D3A]'
-                          : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                        ? 'bg-[#123D3A] text-white border-[#123D3A]'
+                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                         }`}
                     >
                       {amount}$
@@ -458,10 +473,10 @@ function ApplyForm() {
                   <div className="w-24">
                     <Input
                       type="number"
-                      min={0}
+                      min={5}
                       max={500}
                       value={paidLimit || ''}
-                      onChange={(e) => setPaidLimit(Number(e.target.value) || 0)}
+                      onChange={(e) => setPaidLimit(Math.max(5, Number(e.target.value) || 5))}
                       placeholder="مخصص $"
                       className="h-8 text-xs bg-white text-center rounded-xl border-slate-200"
                     />
@@ -475,7 +490,7 @@ function ApplyForm() {
           {!isLoggedIn && (
             <div className="space-y-3 pt-2 border-t border-[#A9B5B0]/20">
               <label className="block text-xs font-bold text-slate-800">
-                بيانات التواصل لإرسال مقعدك عبر واتساب:
+                بيانات التواصل (للتواصل معك ومتابعة طلبك):
               </label>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -498,29 +513,62 @@ function ApplyForm() {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                    رقم الواتساب <span className="text-red-500">*</span>
+                    رقم الهاتف / واتساب والدولة <span className="text-red-500">*</span>
+                  </label>
+                  <CountryPhoneInput
+                    id="apply-phone"
+                    value={phone}
+                    onChange={setPhone}
+                    required
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    البريد الإلكتروني <span className="text-slate-400 font-normal">(اختياري)</span>
                   </label>
                   <div className="relative">
                     <Input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="09xxxxxxxx أو +963..."
-                      className="pr-10 dir-ltr text-left bg-white rounded-xl border-[#A9B5B0]/60 text-xs sm:text-sm py-2 font-mono"
-                      required
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="name@example.com"
+                      className="pr-10 dir-ltr text-left bg-white rounded-xl border-[#A9B5B0]/60 text-xs sm:text-sm py-2"
                     />
-                    <Phone className="w-4 h-4 text-slate-400 absolute right-3.5 top-3" />
+                    <Mail className="w-4 h-4 text-slate-400 absolute right-3.5 top-3" />
                   </div>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-500">
-                🔒 لن نشارك رقمك مع أي جهة خارج المراكز التدريبية المعتمدة التي تطلبها.
-              </p>
             </div>
           )}
 
+          {/* Terms Agreement Checkbox */}
+          <div className="pt-1">
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-[#D58A38] focus:ring-[#D58A38] mt-0.5 shrink-0 cursor-pointer accent-[#D58A38]"
+                required
+              />
+              <span className="text-xs text-slate-700 leading-relaxed font-medium">
+                أوافق على{' '}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-bold text-[#123D3A] underline hover:text-[#D58A38] transition"
+                >
+                  شروط الاستخدام
+                </Link>
+                ، وأقر بصحة المعلومات التي قدمتها.
+              </span>
+            </label>
+          </div>
+
           {/* Section 6: Action Button with Generous, Prominent Padding */}
-          <div className="pt-3">
+          <div className="pt-2">
             <Button
               type="submit"
               disabled={loading}

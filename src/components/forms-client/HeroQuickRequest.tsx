@@ -15,10 +15,12 @@ import {
   Sparkles, 
   RefreshCw,
   Gift,
-  Check
+  Check,
+  Mail,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import CountryPhoneInput from '@/components/forms-client/CountryPhoneInput';
 
 // 4 مهارات رئيسية شائعة للاختيار التفاعلي المتعدد (حد أقصى 4 مقترحات)
 const POPULAR_SKILLS = [
@@ -57,6 +59,7 @@ export default function HeroQuickRequest() {
   // Contact Info
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
 
   // Status
   const [loading, setLoading] = useState(false);
@@ -117,13 +120,14 @@ export default function HeroQuickRequest() {
       const payload: any = {
         fullName: fullName.trim(),
         phone: phone.trim(),
+        email: email.trim(),
         District: 'إدلب',
         city: cityToSave,
         interests: combined,
         requiredCourses: selectedSkills,
         freeCourses: pricingPreference === 'free' || pricingPreference === 'both',
         paidCourses: pricingPreference === 'paid' || pricingPreference === 'both',
-        paidCoursesLimit: pricingPreference !== 'free' ? Number(paidLimit) || 0 : 0,
+        paidCoursesLimit: pricingPreference !== 'free' ? Math.max(5, Number(paidLimit) || 5) : 0,
       };
 
       await axios.post('/api/student/apply', payload);
@@ -147,6 +151,7 @@ export default function HeroQuickRequest() {
     setPaidLimit(20);
     setFullName('');
     setPhone('');
+    setEmail('');
     setErrorMessage('');
     setStep(1);
   };
@@ -360,7 +365,7 @@ export default function HeroQuickRequest() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {[10, 20, 35, 50].map((amt) => (
+                  {[5, 10, 20, 50].map((amt) => (
                     <button
                       key={amt}
                       type="button"
@@ -378,54 +383,68 @@ export default function HeroQuickRequest() {
 
                 <Input
                   type="number"
-                  min="0"
+                  min="5"
                   max="500"
                   value={paidLimit || ''}
-                  onChange={(e) => setPaidLimit(Number(e.target.value) || 0)}
-                  placeholder="أو اكتب المبلغ المالي بالدولار..."
+                  onChange={(e) => setPaidLimit(Math.max(5, Number(e.target.value) || 5))}
+                  placeholder="أو اكتب المبلغ المالي بالدولار (الحد الأدنى 5$)..."
                   className="h-10 bg-slate-50 border-[#A9B5B0]/40 rounded-xl text-xs font-mono"
                 />
               </div>
             )}
           </div>
 
-          {/* 3. Name & Phone */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label htmlFor="quick-fullname" className="block text-xs font-bold text-slate-700 mb-1">
-                الاسم الكامل <span className="text-[#D58A38]">*</span>
-              </label>
-              <div className="relative">
-                <Input
-                  id="quick-fullname"
-                  name="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="أدخل اسمك الكامل"
-                  className="pr-10 h-11 bg-white border-[#A9B5B0]/50 focus:border-[#123D3A] rounded-xl text-xs sm:text-sm"
+          {/* 3. Name, Phone with Country Code, & Email */}
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="quick-fullname" className="block text-xs font-bold text-slate-700 mb-1">
+                  الاسم الكامل <span className="text-[#D58A38]">*</span>
+                </label>
+                <div className="relative">
+                  <Input
+                    id="quick-fullname"
+                    name="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="أدخل اسمك الكامل"
+                    className="pr-10 h-11 bg-white border-[#A9B5B0]/50 focus:border-[#123D3A] rounded-xl text-xs sm:text-sm"
+                    required
+                  />
+                  <User className="w-4 h-4 text-[#A9B5B0] absolute right-3.5 top-3.5" />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="quick-phone" className="block text-xs font-bold text-slate-700 mb-1">
+                  رقم الواتساب والدولة <span className="text-[#D58A38]">*</span>
+                </label>
+                <CountryPhoneInput
+                  id="quick-phone"
+                  value={phone}
+                  onChange={setPhone}
                   required
                 />
-                <User className="w-4 h-4 text-[#A9B5B0] absolute right-3.5 top-3.5" />
               </div>
             </div>
 
             <div>
-              <label htmlFor="quick-phone" className="block text-xs font-bold text-slate-700 mb-1">
-                رقم الواتساب <span className="text-[#D58A38]">*</span>
+              <label htmlFor="quick-email" className="block text-xs font-bold text-slate-700 mb-1">
+                البريد الإلكتروني (اختياري)
               </label>
               <div className="relative">
                 <Input
-                  id="quick-phone"
-                  name="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="09xxxxxxxx أو +963..."
-                  className="pr-10 h-11 dir-ltr text-left bg-white border-[#A9B5B0]/50 focus:border-[#123D3A] rounded-xl text-xs sm:text-sm font-mono"
-                  required
+                  id="quick-email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  className="pr-10 h-10 bg-white border-[#A9B5B0]/50 focus:border-[#123D3A] rounded-xl text-xs sm:text-sm font-mono"
+                  dir="ltr"
                 />
-                <Phone className="w-4 h-4 text-[#A9B5B0] absolute right-3.5 top-3.5" />
+                <Mail className="w-4 h-4 text-[#A9B5B0] absolute right-3.5 top-3" />
               </div>
             </div>
           </div>
@@ -472,10 +491,10 @@ export default function HeroQuickRequest() {
               وصل طلبك بنجاح ✓
             </h3>
             <p className="text-xs sm:text-sm text-slate-700 mt-2 leading-relaxed max-w-sm mx-auto">
-              سجلنا رغبتك بالتدريب وسنقوم بمطابقتها مع المراكز والمعاهد المعتمدة في إدلب والشمال السوري.
+              سجلنا رغبتك بالتدريب لفهم احتياجك والمساعدة في استكشاف فرص تدريبية مناسبة.
             </p>
             <p className="text-xs text-emerald-700 font-bold mt-1.5">
-              ستصلك رسالة عبر واتساب فور بدء التسجيل أو افتتاح دفعة جديدة.
+              يمكنك متابعة المستجدات والفرص المنشورة باستمرار عبر المنصة.
             </p>
           </div>
 
@@ -485,7 +504,7 @@ export default function HeroQuickRequest() {
                 type="button"
                 className="w-full py-4 h-auto min-h-[50px] bg-[#123D3A] hover:bg-[#0E2F2D] text-white font-black text-sm gap-2 rounded-2xl shadow-md"
               >
-                <span>استكشف الدورات المفتوحة للتسجيل الآن ←</span>
+                <span>استكشف التدريبات والبرامج المنشورة ←</span>
               </Button>
             </a>
 

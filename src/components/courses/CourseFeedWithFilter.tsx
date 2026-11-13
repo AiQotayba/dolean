@@ -248,7 +248,7 @@ function CourseCard({ course }: { course: CourseItem }) {
         {/* 4. Action button: [ احجز مقعدك ] */}
         <div className="pt-2">
           <div className="w-full py-2.5 px-3 rounded-xl bg-[#123D3A] group-hover:bg-[#D58A38] text-white text-xs font-black flex items-center justify-center gap-1.5 transition-colors shadow-xs">
-            <span>احجز مقعدك</span>
+            <span>التفاصيل والتسجيل</span>
             <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
           </div>
         </div>

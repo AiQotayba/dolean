@@ -35,7 +35,7 @@ export default async function HomeAdmin({ searchParams }: AdminHomeProps) {
   await Headers();
 
   const resolvedParams = searchParams ? await searchParams : {};
-  const period = resolvedParams?.period || "month";
+  const period = resolvedParams?.period || "week";
   const from = resolvedParams?.from || "";
   const to = resolvedParams?.to || "";
 
@@ -43,7 +43,7 @@ export default async function HomeAdmin({ searchParams }: AdminHomeProps) {
   const now = new Date();
   let startDate: Date | null = null;
   let endDate: Date | null = null;
-  let periodLabel = "خلال الشهر الحالي";
+  let periodLabel = "خلال هذا الأسبوع";
 
   if (period === "day") {
     startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -348,28 +348,27 @@ export default async function HomeAdmin({ searchParams }: AdminHomeProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 1. Header Toolbar with Fast Period Filter */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 sm:p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-            مؤشرات العمل اليومية والتشغيلية
+    <div className="space-y-4">
+      {/* 1. Header: Clean & Action-Oriented without filler text */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl p-3.5 sm:px-5 sm:py-3 shadow-2xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
+            لوحة التحكم والمؤشرات الأسبوعية
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            لوحة قيادة سريعة تركز على الدورات الجديدة، المسودات المعلقة، وإقبال الطلاب {periodLabel}
-          </p>
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+            {periodLabel}
+          </span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <Link
             href="/admin/stats"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-[#123D3A] bg-[#123D3A]/10 hover:bg-[#123D3A]/15 transition border border-[#123D3A]/20"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-[#123D3A] bg-[#123D3A]/10 hover:bg-[#123D3A]/15 transition"
           >
             <BarChart3 className="w-3.5 h-3.5" />
-            <span>الإحصائيات الشاملة والتحليلات</span>
+            <span>التحليلات الشاملة</span>
           </Link>
 
-          {/* Shadcn Select Period Selector */}
           <PeriodSelector
             currentPeriod={period}
             initialFrom={from}
@@ -378,153 +377,126 @@ export default async function HomeAdmin({ searchParams }: AdminHomeProps) {
         </div>
       </div>
 
-      {/* 2. Compact Horizontal KPI Cards (Icon + Label on right, Count on left) */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-        {/* Card 1: Courses */}
-        <Link
-          href="/admin/courses"
-          className="group flex items-center justify-between p-3.5 sm:px-4 sm:py-3 rounded-2xl bg-white border border-slate-200/90 hover:border-[#123D3A]/40 hover:shadow-xs transition duration-150 shadow-2xs"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-[#123D3A] transition truncate">
-              التدريبات
-            </span>
-          </div>
-          <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono pl-1">
-            {coursesCount}
-          </span>
-        </Link>
+      {/* 2. Duolingo-style Side-by-Side Grid: Analytics on Right, Latest Student Forms on Left */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Right Column (7 cols): KPIs & Weekly Registration Chart */}
+        <div className="lg:col-span-7 space-y-4">
+          {/* KPI Cards Row */}
+          <div className="grid grid-cols-3 gap-3">
+            {/* Card 1: Courses */}
+            <Link
+              href="/admin/courses"
+              className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-[#123D3A]/40 transition shadow-2xs flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700">التدريبات</span>
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="text-2xl font-black text-slate-900 font-mono mt-2">
+                {coursesCount}
+              </span>
+            </Link>
 
-        {/* Card 2: Drafts */}
-        <Link
-          href="/admin/def-courses"
-          className="group flex items-center justify-between p-3.5 sm:px-4 sm:py-3 rounded-2xl bg-white border border-slate-200/90 hover:border-amber-400/50 hover:shadow-xs transition duration-150 shadow-2xs"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <FileEdit className="w-5 h-5" />
-            </div>
-            <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-[#D58A38] transition truncate">
-              مسودة التدريبات
-            </span>
-          </div>
-          <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono pl-1">
-            {pendingDefCoursesCount}
-          </span>
-        </Link>
-
-        {/* Card 3: Student Requests */}
-        <Link
-          href="/admin/users-details"
-          className="group flex items-center justify-between p-3.5 sm:px-4 sm:py-3 rounded-2xl bg-white border border-slate-200/90 hover:border-purple-400/50 hover:shadow-xs transition duration-150 shadow-2xs"
-        >
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              <UserCheck className="w-5 h-5" />
-            </div>
-            <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-purple-700 transition truncate">
-              طلبات الطلاب
-            </span>
-          </div>
-          <span className="text-xl sm:text-2xl font-black text-slate-900 font-mono pl-1">
-            {periodStudentsCount}
-          </span>
-        </Link>
-      </div>
-
-      {/* 3. Interactive Student Registrations Chart */}
-      <StudentRegistrationChart
-        data={chartData}
-        periodLabel={periodLabel}
-      />
-
-      {/* 4. Actionable Two-Column Layout: Pending Drafts & Fast Student Inquiries */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Column 1 (6 cols): Pending Drafts for Quick Conversion */}
-        <div className="lg:col-span-6 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm sm:text-base font-black text-slate-900">
-                المسودات بانتظار التحويل لدورة
-              </h2>
-              <p className="text-xs text-slate-500">
-                الفرص المقترحة التي لم تُطلق كدورة تدريبية بعد
-              </p>
-            </div>
+            {/* Card 2: Drafts */}
             <Link
               href="/admin/def-courses"
-              className="text-xs font-bold text-[#123D3A] hover:text-[#D58A38] transition flex items-center gap-1"
+              className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-amber-400/50 transition shadow-2xs flex flex-col justify-between"
             >
-              <span>عرض كل المسودات ({pendingDefCoursesCount})</span>
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700">المسودات</span>
+                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+                  <FileEdit className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="text-2xl font-black text-slate-900 font-mono mt-2">
+                {pendingDefCoursesCount}
+              </span>
+            </Link>
+
+            {/* Card 3: Student Requests */}
+            <Link
+              href="/admin/users-details"
+              className="group p-3 rounded-2xl bg-white border border-slate-200/90 hover:border-purple-400/50 transition shadow-2xs flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700">طلبات الطلاب</span>
+                <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center">
+                  <UserCheck className="w-4 h-4" />
+                </div>
+              </div>
+              <span className="text-2xl font-black text-slate-900 font-mono mt-2">
+                {periodStudentsCount}
+              </span>
             </Link>
           </div>
 
-          <div className="space-y-2.5">
-            {pendingDrafts.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-400 text-xs">
-                <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-2 opacity-80" />
-                <p className="font-bold text-slate-700">لا توجد مسودات معلقة حالياً</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  جميع المسودات تمت مراجعتها أو إطلاقها كدورات
-                </p>
-              </div>
-            ) : (
-              pendingDrafts.map((draft: any) => {
-                const idStr = draft._id.toString();
-                return (
-                  <div
-                    key={idStr}
-                    className="p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-amber-300 transition shadow-2xs flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center shrink-0">
-                        <FileEdit className="w-4 h-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-slate-900 truncate max-w-[240px]">
-                          {draft.title || draft.rawText?.slice(0, 40) || "مسودة مقترح تدريبي"}
-                        </h4>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
-                          {draft.organizationName && (
-                            <span className="truncate max-w-[140px] text-slate-600 font-medium">
-                              {draft.organizationName}
-                            </span>
-                          )}
-                          <span>•</span>
-                          <span>بانتظار التحويل</span>
-                        </div>
-                      </div>
-                    </div>
+          {/* Weekly Interactive Registration Chart */}
+          <StudentRegistrationChart
+            data={chartData}
+            periodLabel={periodLabel}
+          />
 
-                    <Link
-                      href={`/admin/ai-course?draftId=${idStr}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#123D3A] hover:bg-[#0E2F2D] text-white text-xs font-bold shrink-0 transition shadow-2xs"
+          {/* Pending Drafts Box under Chart if any */}
+          {pendingDrafts.length > 0 && (
+            <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-slate-900 flex items-center gap-1.5">
+                  <FileEdit className="w-3.5 h-3.5 text-amber-600" />
+                  <span>مسودات تدريبية بانتظار الاعتماد ({pendingDefCoursesCount})</span>
+                </h3>
+                <Link
+                  href="/admin/def-courses"
+                  className="text-[11px] font-bold text-[#123D3A] hover:underline flex items-center gap-1"
+                >
+                  <span>عرض الكل</span>
+                  <ArrowLeft className="w-3 h-3" />
+                </Link>
+              </div>
+
+              <div className="space-y-2">
+                {pendingDrafts.slice(0, 3).map((draft: any) => {
+                  const idStr = draft._id.toString();
+                  return (
+                    <div
+                      key={idStr}
+                      className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between gap-3"
                     >
-                      <Sparkles className="w-3.5 h-3.5 text-[#D58A38]" />
-                      <span>توليد واعتماد</span>
-                    </Link>
-                  </div>
-                );
-              })
-            )}
-          </div>
+                      <div className="min-w-0">
+                        <h4 className="text-xs font-bold text-slate-800 truncate">
+                          {draft.title || draft.rawText?.slice(0, 35) || "مسودة مقترح"}
+                        </h4>
+                        <span className="text-[10px] text-slate-400">
+                          {draft.organizationName || "جهة غير محددة"}
+                        </span>
+                      </div>
+
+                      <Link
+                        href={`/admin/ai-course?draftId=${idStr}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#123D3A] text-white text-[11px] font-bold shrink-0 hover:bg-[#0E2F2D]"
+                      >
+                        <Sparkles className="w-3 h-3 text-amber-300" />
+                        <span>اعتماد بالـ AI</span>
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Column 2 (6 cols): Latest Student Inquiries with Direct WhatsApp */}
-        <div className="lg:col-span-6 space-y-3">
-          <div className="flex items-center justify-between">
+        {/* Left Column (5 cols): Latest Student Applications directly beside stats */}
+        <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
             <div>
-              <h2 className="text-sm sm:text-base font-black text-slate-900">
+              <h2 className="text-xs sm:text-sm font-black text-slate-900">
                 أحدث استمارات وطلبات الطلاب
               </h2>
-              <p className="text-xs text-slate-500">
-                تواصل وتوجيه فوري للطلاب المهتمين بالتدريب
-              </p>
+              <span className="text-[11px] text-slate-400">تواصل فوري عبر واتساب</span>
             </div>
+
             <Link
               href={
                 period === "week"
@@ -533,23 +505,19 @@ export default async function HomeAdmin({ searchParams }: AdminHomeProps) {
                   ? "/admin/users-details?date_filter=today"
                   : period === "month"
                   ? "/admin/users-details?date_filter=month"
-                  : period === "30days"
-                  ? "/admin/users-details?date_filter=30days"
-                  : period === "custom" && from && to
-                  ? `/admin/users-details?date_filter=custom&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
                   : "/admin/users-details"
               }
-              className="text-xs font-bold text-[#123D3A] hover:text-[#D58A38] transition flex items-center gap-1"
+              className="text-xs font-bold text-[#123D3A] hover:underline flex items-center gap-1"
             >
-              <span>جدول كل الطلبات ({periodStudentsCount})</span>
-              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>كل الطلبات ({periodStudentsCount})</span>
+              <ArrowLeft className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {recentStudents.length === 0 ? (
-              <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center text-slate-400 text-xs">
-                لا توجد طلبات طلاب مسجلة {periodLabel}
+              <div className="p-8 text-center text-slate-400 text-xs font-medium">
+                لا توجد طلبات مسجلة {periodLabel}
               </div>
             ) : (
               recentStudents.map((student: any) => {
@@ -558,42 +526,42 @@ export default async function HomeAdmin({ searchParams }: AdminHomeProps) {
                 return (
                   <div
                     key={idStr}
-                    className="p-3.5 rounded-2xl bg-white border border-slate-200/90 hover:border-[#123D3A]/40 transition shadow-2xs flex items-center justify-between gap-3"
+                    className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 hover:border-slate-200 transition flex items-center justify-between gap-2.5"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 font-bold text-xs">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center shrink-0 font-bold text-xs">
                         {student.fullName?.charAt(0) || "ط"}
                       </div>
                       <div className="min-w-0">
-                        <h4 className="text-xs font-bold text-slate-900 truncate max-w-[200px]">
+                        <h4 className="text-xs font-bold text-slate-900 truncate max-w-[150px]">
                           {student.fullName}
                         </h4>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5 truncate">
-                          <span className="text-[#D58A38] font-semibold truncate max-w-[150px]">
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 mt-0.5 truncate">
+                          <span className="text-[#D58A38] font-semibold truncate max-w-[120px]">
                             {student.interests || "رغبة عامة"}
                           </span>
                           <span>•</span>
-                          <span>{student.District || "إدلب"}</span>
+                          <span className="truncate">{student.District || "إدلب"}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="shrink-0">
                       {cleanPhone ? (
                         <a
                           href={`https://wa.me/${cleanPhone}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-2xs"
-                          title="مراسلة عبر واتساب"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition shadow-2xs"
+                          title="مراسلة واتساب"
                         >
-                          <MessageCircle className="w-3.5 h-3.5" />
+                          <MessageCircle className="w-3.5 h-3.5 fill-white/20" />
                           <span>واتساب</span>
                         </a>
                       ) : (
                         <Link
                           href="/admin/users-details"
-                          className="text-xs font-bold text-slate-600 hover:text-slate-900 px-2 py-1"
+                          className="text-[11px] font-bold text-slate-600 hover:text-slate-900 px-2 py-1"
                         >
                           عرض
                         </Link>

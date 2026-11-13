@@ -12,6 +12,7 @@ import {
 const BREADCRUMB_MAP: Record<string, string> = {
   "/admin": "الرئيسية",
   "/admin/users-details": "طلبات واهتمامات الطلاب",
+  "/admin/send-training": "إرسال التدريبات للطلاب",
   "/admin/courses": "الدورات والتدريبات المعتمدة",
   "/admin/def-courses": "مسودات الدورات والمقترحات",
   "/admin/ai-course": "توليد دورة بالذكاء الاصطناعي",

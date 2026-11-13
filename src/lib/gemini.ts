@@ -6,11 +6,125 @@ export const ai = new GoogleGenAI({
   apiKey: apiKey || '',
 });
 
-export const CANDIDATE_MODELS = [
-  process.env.GEMINI_MODEL || 'gemini-3.8-flash',
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-];
+// قائمة النماذج الفعالة والمدعومة حالياً (استبعاد النماذج القديمة 1.5 و 2.0 الموقوفة)
+const envModel = process.env.GEMINI_MODEL?.trim();
+const isLegacyModel = (m?: string) =>
+  !m || ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-flash'].includes(m);
+
+export const CANDIDATE_MODELS = Array.from(
+  new Set([
+    envModel && !isLegacyModel(envModel) ? envModel : 'gemini-3.8-flash',
+    'gemini-3.8-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.6-flash',
+    'gemini-3.1-flash-lite',
+  ])
+);
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function isTransientError(err: any): boolean {
+  if (!err) return false;
+  const status = err.status || err.code || err.statusCode;
+  const msg = (typeof err === 'string' ? err : err.message || '').toLowerCase();
+
+  return (
+    status === 503 ||
+    status === 429 ||
+    status === 'UNAVAILABLE' ||
+    status === 'RESOURCE_EXHAUSTED' ||
+    msg.includes('503') ||
+    msg.includes('429') ||
+    msg.includes('high demand') ||
+    msg.includes('spikes in demand') ||
+    msg.includes('quota') ||
+    msg.includes('rate limit') ||
+    msg.includes('overloaded') ||
+    msg.includes('unavailable')
+  );
+}
+
+function formatGeminiError(err: any): string {
+  if (!err) return 'حدث خطأ غير متوقع أثناء معالجة البيانات بالذكاء الاصطناعي';
+
+  let msg = typeof err === 'string' ? err : err.message || '';
+
+  // Extract nested JSON error message if present
+  if (msg.includes('{') && msg.includes('}')) {
+    try {
+      const match = msg.match(/\{[\s\S]*\}/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        if (parsed?.error?.message) {
+          msg = parsed.error.message;
+        }
+      }
+    } catch {
+      // ignore json parse errors
+    }
+  }
+
+  const lower = msg.toLowerCase();
+  if (lower.includes('high demand') || lower.includes('503') || lower.includes('unavailable')) {
+    return 'خوادم معالجة الذكاء الاصطناعي تشهد ضغطاً كبيراً مؤقتاً. يرجى المحاولة مرة أخرى بعد بضع ثوانٍ.';
+  }
+  if (lower.includes('resource_exhausted') || lower.includes('429') || lower.includes('quota')) {
+    return 'تم الوصول إلى الحد المسموح به من الطلبات مؤقتاً. يرجى المحاولة بعد دقيقة.';
+  }
+  if (lower.includes('not found') || lower.includes('404')) {
+    return 'نموذج الذكاء الاصطناعي المحدد غير متاح حالياً. يرجى تحديث الإعدادات.';
+  }
+  if (lower.includes('api_key') || lower.includes('unauthenticated') || lower.includes('401') || lower.includes('403')) {
+    return 'مفتاح واجهة الذكاء الاصطناعي GEMINI_API_KEY غير معرّف أو غير صالح.';
+  }
+
+  return msg || 'حدث خطأ أثناء معالجة المحتوى بواسطة الذكاء الاصطناعي';
+}
+
+function safeParseJson(content: string) {
+  const trimmed = content.trim();
+  if (trimmed.startsWith('```')) {
+    const unquoted = trimmed
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/, '')
+      .replace(/```$/, '')
+      .trim();
+    return JSON.parse(unquoted);
+  }
+  return JSON.parse(trimmed);
+}
+
+async function generateWithFallback<T>(
+  actionName: string,
+  execute: (model: string) => Promise<T>
+): Promise<T> {
+  let lastError: any = null;
+
+  for (const model of CANDIDATE_MODELS) {
+    // Attempt up to 2 times for transient errors per model
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        return await execute(model);
+      } catch (err: any) {
+        lastError = err;
+        const transient = isTransientError(err);
+        console.warn(`[Gemini AI] ${actionName} failed on model ${model} (attempt ${attempt}/2):`, err?.message || err);
+
+        if (transient && attempt < 2) {
+          await sleep(1500);
+          continue;
+        }
+
+        // If not transient or attempts exhausted, fail over to next model candidate
+        break;
+      }
+    }
+  }
+
+  const friendlyMsg = formatGeminiError(lastError);
+  console.error(`[Gemini AI] All candidate models failed for ${actionName}:`, lastError);
+  throw new Error(friendlyMsg);
+}
 
 const courseOutputSchema: Schema = {
   type: Type.OBJECT,
@@ -114,46 +228,39 @@ const SYSTEM_INSTRUCTION = `
 `;
 
 /**
- * استخراج بيانات الدورة من نص غير مهيكل مع دعم التبديل التلقائي بين النماذج
+ * استخراج بيانات الدورة من نص غير مهيكل مع دعم التبديل التلقائي بين النماذج وإعادة المحاولة
  */
 export async function extractCourseFromText(rawText: string) {
   if (!process.env.GEMINI_API_KEY) {
     throw new Error('لم يتم إعداد GEMINI_API_KEY في ملف البيئة .env');
   }
 
-  let lastError: any = null;
-
-  for (const model of CANDIDATE_MODELS) {
-    try {
-      const response = await ai.models.generateContent({
-        model,
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: `يرجى تحليل إعلان الدورة التدريبية التالي واستخراج بياناته بشكل منظم:\n\n${rawText}` },
-            ],
-          },
-        ],
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          responseMimeType: 'application/json',
-          responseSchema: courseOutputSchema,
-          temperature: 0.1,
+  return generateWithFallback('extractCourseFromText', async (model) => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { text: `يرجى تحليل إعلان الدورة التدريبية التالي واستخراج بياناته بشكل منظم:\n\n${rawText}` },
+          ],
         },
-      });
+      ],
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: 'application/json',
+        responseSchema: courseOutputSchema,
+        temperature: 0.1,
+      },
+    });
 
-      const content = response.text;
-      if (content) {
-        return JSON.parse(content);
-      }
-    } catch (err: any) {
-      console.warn(`Model ${model} failed, trying next candidate...`, err.message);
-      lastError = err;
+    const content = response.text;
+    if (!content) {
+      throw new Error('لم يُرجع نموذج الذكاء الاصطناعي أي استجابة');
     }
-  }
 
-  throw new Error(lastError?.message || 'لم يتم استخراج أي بيانات من النص بواسطة نماذج الذكاء الاصطناعي');
+    return safeParseJson(content);
+  });
 }
 
 /**
@@ -179,30 +286,134 @@ export async function extractCourseFromImage(imageBuffer: Buffer, mimeType: stri
     },
   ];
 
-  let lastError: any = null;
+  return generateWithFallback('extractCourseFromImage', async (model) => {
+    const response = await ai.models.generateContent({
+      model,
+      contents: [{ role: 'user', parts }],
+      config: {
+        systemInstruction: SYSTEM_INSTRUCTION,
+        responseMimeType: 'application/json',
+        responseSchema: courseOutputSchema,
+        temperature: 0.1,
+      },
+    });
 
-  for (const model of CANDIDATE_MODELS) {
-    try {
+    const content = response.text;
+    if (!content) {
+      throw new Error('لم يُرجع نموذج الذكاء الاصطناعي أي استجابة لتحليل الصورة');
+    }
+
+    return safeParseJson(content);
+  });
+}
+
+const keywordsOutputSchema: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    keywords: {
+      type: Type.ARRAY,
+      items: { type: Type.STRING },
+      description: 'الكلمات المفتاحية والتخصصات والمجالات التدريبية ذات الصلة التي قد يبحث عنها الطلاب',
+    },
+    suggestedMessage: {
+      type: Type.STRING,
+      description: 'مسودة رسالة إعلان مهنية للواتساب تحتوي على المتغيرات {{name}} و {{title}} و {{link}}',
+    },
+  },
+  required: ['keywords', 'suggestedMessage'],
+};
+
+/**
+ * توليد واقتراح كلمات مفتاحية ذكية ورسالة واتساب بناءً على تفاصيل التدريب
+ */
+export async function suggestTrainingKeywords(trainingInfo: {
+  title: string;
+  summary?: string;
+  context?: string;
+}): Promise<{ keywords: string[]; suggestedMessage: string }> {
+  // Fallback if no title or no API key
+  const defaultFallback = {
+    keywords: [
+      trainingInfo.title,
+      ...trainingInfo.title.split(/\s+/).filter((w) => w.length > 2),
+    ].slice(0, 8),
+    suggestedMessage: `السلام عليكم ورحمة الله وبركاته يا {{name}}
+معك فريق منصة تلاقي
+لأنك مسجل معنا وتبحث عن فرصة تطوّر فيها مهاراتك، يسعدنا جداً إعلامك بفتح باب التسجيل في:
+
+*{{title}}*
+
+للاطلاع على كامل التفاصيل والشروط والتسجيل مباشرة:
+{{link}}
+
+*ملاحظة تهمنا:*
+* في حال تم قبولك بالتدريب، لا تنسى تبشّرنا لنسعد معك ونحدّث ملفك للمستوى القادم!
+* وإذا كنت ببالك تدريب آخر أو حابب نساعدك بمهارات ثانية، فيك تسجل طلبك دائماً عبر المنصة:
+https://talaqi.vercel.app/apply
+
+كل التوفيق والبركة في مسيرتك العلمية والمهنية`,
+  };
+
+  if (!process.env.GEMINI_API_KEY || !trainingInfo.title?.trim()) {
+    return defaultFallback;
+  }
+
+  const prompt = `أنت خبير في منصة "تلاقي" المعنية بفرص التدريب والتأهيل المهني في إدلب والشمال السوري.
+لدينا إعلان تدريب جديد:
+- العنوان: ${trainingInfo.title}
+- الملخص: ${trainingInfo.summary || 'غير محدد'}
+- التفاصيل: ${trainingInfo.context ? trainingInfo.context.slice(0, 1000) : 'غير محدد'}
+
+المطلوب:
+1. استخراج 6-12 كلمة مفتاحية وتخصصات ومصطلحات مرادفة باللغة العربية والإنجليزية، بحيث تمثل بدقة ما قد يكتبه الطالب في استمارة التسجيل عند التعبير عن اهتماماته (مثل: "برمجة، تطوير ويب، React، هندسة برمجيات" أو "إسعافات أولية، تمريض، رعاية صحية").
+2. صياغة مسودة رسالة واتساب أنيقة ومباشرة ومطابقة لهذا النمط تماماً بدون استخدام أي إيموجي (لتجنب تشوه الرموز في واتساب):
+السلام عليكم ورحمة الله وبركاته يا {{name}}
+معك فريق منصة تلاقي
+لأنك مسجل معنا وتبحث عن فرصة تطوّر فيها مهاراتك، يسعدنا جداً إعلامك بفتح باب التسجيل في:
+
+*{{title}}*
+
+للاطلاع على كامل التفاصيل والشروط والتسجيل مباشرة:
+{{link}}
+
+*ملاحظة تهمنا:*
+* في حال تم قبولك بالتدريب، لا تنسى تبشّرنا لنسعد معك ونحدّث ملفك للمستوى القادم!
+* وإذا كنت ببالك تدريب آخر أو حابب نساعدك بمهارات ثانية، فيك تسجل طلبك دائماً عبر المنصة:
+https://talaqi.vercel.app/apply
+
+كل التوفيق والبركة في مسيرتك العلمية والمهنية
+
+تحتوي الرسالة حرفياً على المتغيرات:
+{{name}}
+{{title}}
+{{link}}
+ويمنع منعاً باتاً وضع أي إيموجي.`;
+
+  try {
+    return await generateWithFallback('suggestTrainingKeywords', async (model) => {
       const response = await ai.models.generateContent({
         model,
-        contents: [{ role: 'user', parts }],
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
         config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
           responseMimeType: 'application/json',
-          responseSchema: courseOutputSchema,
-          temperature: 0.1,
+          responseSchema: keywordsOutputSchema,
+          temperature: 0.2,
         },
       });
 
       const content = response.text;
-      if (content) {
-        return JSON.parse(content);
+      if (!content) throw new Error('فارغ');
+      const parsed = safeParseJson(content);
+      if (Array.isArray(parsed.keywords) && parsed.keywords.length > 0) {
+        return {
+          keywords: parsed.keywords.map((k: string) => k.trim()).filter(Boolean),
+          suggestedMessage: parsed.suggestedMessage || defaultFallback.suggestedMessage,
+        };
       }
-    } catch (err: any) {
-      console.warn(`Model ${model} image OCR failed, trying next candidate...`, err.message);
-      lastError = err;
-    }
+      throw new Error('بيانات الكلمات المفتاحية غير مكتملة');
+    });
+  } catch (err: any) {
+    console.warn('[Gemini AI] Keywords generation fallback triggered:', err.message);
+    return defaultFallback;
   }
-
-  throw new Error(lastError?.message || 'فشل استخراج البيانات من الصورة بواسطة نماذج الذكاء الاصطناعي');
 }

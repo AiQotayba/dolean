@@ -7,7 +7,7 @@ import JsCookie from "js-cookie";
 import { useRouter } from "next/navigation";
 import FormField from "@/components/Element/FormField";
 import { CourseContext } from "./page";
-import { Storage } from "@/components/firebase";
+import { uploadImageToBlob } from "@/lib/blob";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle2,
@@ -18,6 +18,9 @@ import {
   MapPin,
   DollarSign,
   AlertCircle,
+  Upload,
+  Image as ImageIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,7 +36,8 @@ export default function AddCourse({ nextStep, prevStep, draftId }: AddCourseProp
   const { handleSubmit, reset, watch } = methods;
   const { Course } = useContext(CourseContext);
 
-  const [Res, setRes] = useState<any>({});
+  const [imageUrl, setImageUrl] = useState<string>("");
+  const [isUploadingImage, setIsUploadingImage] = useState<boolean>(false);
   const [imageMsg, setImageMsg] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const token = JsCookie.get("authorization");
@@ -41,8 +45,8 @@ export default function AddCourse({ nextStep, prevStep, draftId }: AddCourseProp
   useEffect(() => {
     if (Course && Object.keys(Course).length > 0) {
       reset(Course);
-      if (Course.image) {
-        setRes({ image: Course.image });
+      if (typeof Course.image === "string" && Course.image.trim() && Course.image !== "[object Object]") {
+        setImageUrl(Course.image.trim());
       }
     }
   }, [Course, reset]);
@@ -50,10 +54,16 @@ export default function AddCourse({ nextStep, prevStep, draftId }: AddCourseProp
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
+
+      // ضمان أن حقل الصورة هو رابط نصي صالح أو فارغ (وليس كائن FileList)
+      const resolvedImage = typeof imageUrl === "string" ? imageUrl.trim() : "";
+
+      // استبعاد أي قيمة كائنية قد تكون سُجلت لـ image من formState
+      const { image: _ignoredImage, ...cleanData } = data;
+
       const payload = {
-        ...data,
-        ...Res,
-        image: Res?.image || data.image || Course?.image || "",
+        ...cleanData,
+        image: resolvedImage,
         status: "published",
         providingEntity: {
           name: data.center || Course?.center || "جهة معتمدة",
@@ -87,8 +97,15 @@ export default function AddCourse({ nextStep, prevStep, draftId }: AddCourseProp
         }
       }
 
-      toast.success("تم اعتماد ونشر الدورة التدريبية بنجاح!");
-      router.push("/admin/courses");
+      const createdCourse = response.data?.data || response.data;
+      const createdId = createdCourse?._id;
+
+      toast.success("تم اعتماد ونشر الدورة بنجاح! جاري تحويلك لإرسالها للطلاب المهتمين...");
+      if (createdId) {
+        router.push(`/admin/send-training?courseId=${createdId}`);
+      } else {
+        router.push("/admin/courses");
+      }
     } catch (error: any) {
       console.error("Error adding course:", error);
       toast.error(error.response?.data?.message || "حدث خطأ أثناء حفظ الدورة");
@@ -97,14 +114,20 @@ export default function AddCourse({ nextStep, prevStep, draftId }: AddCourseProp
     }
   };
 
-  async function uploadImage(e: any) {
+  async function uploadImage(e: React.ChangeEvent<HTMLInputElement>) {
     try {
-      setImageMsg("جاري رفع الصورة...");
-      const image: any = await Storage.add(e.target.files);
-      setImageMsg("تم رفع الصورة بنجاح");
-      setRes({ ...Res, image: image[0] });
-    } catch {
-      setImageMsg("فشل رفع الصورة");
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+      setIsUploadingImage(true);
+      setImageMsg("جاري رفع الصورة إلى Vercel Blob...");
+      const blobUrl = await uploadImageToBlob(files[0]);
+      setImageUrl(blobUrl);
+      setImageMsg("تم رفع الصورة بنجاح إلى Vercel Blob ✓");
+    } catch (err: any) {
+      console.error("Vercel Blob upload error:", err);
+      setImageMsg(err.message || "حدث خطأ أثناء رفع الصورة إلى Vercel Blob");
+    } finally {
+      setIsUploadingImage(false);
     }
   }
 
@@ -119,11 +142,11 @@ export default function AddCourse({ nextStep, prevStep, draftId }: AddCourseProp
                 ✓
               </span>
               <h2 className="text-base sm:text-lg font-black text-slate-900">
-                الخطوة 2: مراجعة واعتماد تفاصيل الدورة المنشورة
+                مراجعة وتأكيد بيانات التدريب
               </h2>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              تم استخراج الحقول التالية تلقائياً بواسطة الذكاء الاصطناعي. يمكنك تعديل أي حقل قبل الاعتماد النهائي.
+              يمكنك مراجعة وتعديل أي حقل قبل النشر والاعتماد النهائي
             </p>
           </div>
 
@@ -135,7 +158,7 @@ export default function AddCourse({ nextStep, prevStep, draftId }: AddCourseProp
             className="text-xs font-bold text-slate-500 gap-1"
           >
             <ArrowRight className="w-3.5 h-3.5" />
-            <span>تعديل النص الأصلي</span>
+            <span>الرجوع</span>
           </Button>
         </div>
 
@@ -221,15 +244,86 @@ export default function AddCourse({ nextStep, prevStep, draftId }: AddCourseProp
             />
           </div>
 
-          <FormField
-            label="صورة أو بوستر الدورة"
-            name="image"
-            type="file"
-            onChange={uploadImage}
-          />
-          {imageMsg && (
-            <p className="text-xs font-bold text-emerald-700">{imageMsg}</p>
-          )}
+          {/* حقل صورة أو بوستر الدورة بدون ربط مع FormField لتجنب مشاكل FileList */}
+          <div className="space-y-2 p-4 rounded-2xl bg-slate-50/80 border border-slate-200">
+            <label className="block text-xs font-bold text-slate-800">
+              صورة أو بوستر الدورة التدريبية (اختياري)
+            </label>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <label className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-2xs transition">
+                {isUploadingImage ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-[#123D3A]" />
+                ) : (
+                  <Upload className="w-3.5 h-3.5 text-slate-500" />
+                )}
+                <span>{isUploadingImage ? "جاري الرفع السحابي..." : "رفع صورة من جهازك"}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={uploadImage}
+                  disabled={isUploadingImage}
+                  className="hidden"
+                />
+              </label>
+
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={imageUrl}
+                  onChange={(e) => {
+                    setImageUrl(e.target.value);
+                    setImageMsg("");
+                  }}
+                  placeholder="أو ألصق رابط الصورة مباشرة هنا (https://...)"
+                  className="w-full text-xs px-3 py-2.5 rounded-xl bg-white border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#123D3A]/20 focus:border-[#123D3A]"
+                />
+              </div>
+            </div>
+
+            {imageMsg && (
+              <p
+                className={`text-xs font-bold ${
+                  imageMsg.includes("نجاح") || imageMsg.includes("✓")
+                    ? "text-emerald-700"
+                    : "text-amber-700"
+                }`}
+              >
+                {imageMsg}
+              </p>
+            )}
+
+            {imageUrl &&
+              (imageUrl.startsWith("http") ||
+                imageUrl.startsWith("/api/blob") ||
+                imageUrl.startsWith("/")) && (
+              <div className="relative mt-2 inline-flex items-center gap-3 p-2 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={imageUrl}
+                  alt="معاينة البوستر"
+                  className="w-14 h-14 object-cover rounded-lg border border-slate-100"
+                />
+                <div className="text-right">
+                  <p className="text-xs font-bold text-slate-800">تم اعتماد الصورة</p>
+                  <p className="text-[10px] text-slate-400 max-w-[220px] truncate" dir="ltr">
+                    {imageUrl}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImageUrl("");
+                    setImageMsg("");
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                  title="إزالة الصورة"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Action Footer */}
           <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">

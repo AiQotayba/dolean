@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import {
   GraduationCap,
@@ -196,10 +197,10 @@ export default function AdminUsersDetailsPage() {
 
   return (
     <div className="space-y-5">
-      {/* Top Header without 'تحديث فوري' badge */}
-      <div className="flex items-center justify-between pb-1">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#123D3A] text-white flex items-center justify-center shadow-xs">
+          <div className="w-10 h-10 rounded-xl bg-[#123D3A] text-white flex items-center justify-center shadow-xs shrink-0">
             <GraduationCap className="w-5 h-5" />
           </div>
           <div>
@@ -207,9 +208,19 @@ export default function AdminUsersDetailsPage() {
               طلبات واهتمامات الطلاب التدريبية
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              قائمة الطلاب المسجلين لتوجيههم للمراكز والمعاهد المعتمدة
+              قائمة الطلاب المسجلين لتوجيههم ومطابقة رغباتهم مع التدريبات المتاحة
             </p>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/admin/send-training"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs active:scale-95"
+          >
+            <MessageCircle className="w-4 h-4 fill-white/20" />
+            <span>إرسال تدريب للطلاب (واتساب) 🚀</span>
+          </Link>
         </div>
       </div>
 

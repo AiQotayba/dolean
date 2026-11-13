@@ -72,7 +72,8 @@ export const ai = new GoogleGenAI({
   apiKey: apiKey || '',
 });
 
-export const GEMINI_MODEL = 'gemini-2.5-flash';
+export const GEMINI_MODEL = 'gemini-3.8-flash';
+export const CANDIDATE_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite', 'gemini-3.6-flash'];
 
 // تعريف المخطط الصارم لضمان مطابقة الرد لمخطط قاعدة البيانات
 const courseOutputSchema: Schema = {

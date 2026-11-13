@@ -80,10 +80,10 @@ export default async function CoursesList() {
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 mb-6 border-b border-[#A9B5B0]/20">
                     <div>
                         <h2 className="text-2xl sm:text-3xl font-black text-[#123D3A] tracking-tight">
-                            دورات مفتوحة للتسجيل الآن
+                            فرص وتدريبات منشورة
                         </h2>
                         <p className="text-xs sm:text-sm text-slate-600 mt-1">
-                            في مراكز إدلب المعتمدة أو أونلاين تتابعها من مكانك.
+                            اطّلع على تفاصيل التدريبات وتعرّف على مواعيد وشروط التسجيل الموضحة لكل فرصة.
                         </p>
                     </div>
 
@@ -91,7 +91,7 @@ export default async function CoursesList() {
                         href="/courses"
                         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#123D3A] hover:bg-[#0E2F2D] text-white text-xs sm:text-sm font-bold shadow-xs transition active:scale-95 shrink-0"
                     >
-                        <span>تصفح جميع الدورات</span>
+                        <span>استكشف جميع التدريبات</span>
                         <ArrowLeft className="w-4 h-4 text-[#D58A38]" />
                     </Link>
                 </div>

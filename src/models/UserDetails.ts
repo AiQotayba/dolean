@@ -4,6 +4,7 @@ export interface IUserDetails extends Document {
   user_id?: mongoose.Types.ObjectId;
   fullName: string;
   phone: string;
+  email?: string;
   births: number;
   District?: string;
   city?: string;
@@ -29,6 +30,7 @@ const UserDetailsSchema = new Schema<IUserDetails>(
     user_id: { type: Schema.Types.ObjectId, ref: 'User', default: null },
     fullName: { type: String, default: 'طالب مهتم' },
     phone: { type: String, default: '' },
+    email: { type: String, default: '' },
     births: { type: Number, default: 2000 },
     District: { type: String, default: 'إدلب' },
     city: { type: String, default: '' },

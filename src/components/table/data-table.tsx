@@ -206,7 +206,18 @@ function DataTableInner<T extends Record<string, any>>({
   const searchParams = useSearchParams();
 
   const page = Math.max(1, Number(searchParams?.get("page")) || 1);
-  const limit = Math.max(1, Number(searchParams?.get("limit")) || DEFAULT_LIMIT);
+  const limitFromUrl = Number(searchParams?.get("limit"));
+  const [clientLimit, setClientLimit] = React.useState<number>(
+    limitFromUrl > 0 ? limitFromUrl : DEFAULT_LIMIT
+  );
+  const limit = clientLimit;
+
+  React.useEffect(() => {
+    const lim = Number(searchParams?.get("limit"));
+    if (lim > 0 && lim !== clientLimit) {
+      setClientLimit(lim);
+    }
+  }, [searchParams]);
 
   const [sortColumn, setSortColumn] = React.useState<string | null>(null);
   const [sortDirection, setSortDirection] = React.useState<"asc" | "desc" | null>(null);
@@ -468,7 +479,12 @@ function DataTableInner<T extends Record<string, any>>({
   };
 
   const handleLimitChange = (newLimit: string) => {
-    updateParams({ limit: newLimit, page: "1" });
+    const num = Number(newLimit);
+    if (num > 0) {
+      setClientLimit(num);
+      updateParams({ limit: newLimit, page: "1" });
+      queryClient.invalidateQueries({ queryKey: ["table-data", apiEndpoint] });
+    }
   };
 
   const handleDeleteClick = (row: T) => {
@@ -756,7 +772,7 @@ function DataTableInner<T extends Record<string, any>>({
                 العدد لكل صفحة:
               </span>
               <Select
-                value={String(pagination.per_page)}
+                value={String(clientLimit)}
                 onValueChange={handleLimitChange}
               >
                 <SelectTrigger className="w-[72px] h-8 text-xs bg-white">

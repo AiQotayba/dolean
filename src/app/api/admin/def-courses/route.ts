@@ -73,6 +73,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     await connectToDatabase();
+
+    if (typeof body.image !== 'string' || body.image.trim() === '[object Object]') {
+      body.image = '';
+    } else {
+      body.image = body.image.trim();
+    }
+
     const newDefCourse = await DefCourse.create(body);
     return NextResponse.json({ isError: false, data: newDefCourse }, { status: 201 });
   } catch (error: any) {
