@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import CountryPhoneInput from '@/components/forms-client/CountryPhoneInput';
+import CountryPhoneInput, { isValidPhoneNumber } from '@/components/forms-client/CountryPhoneInput';
 
 // 4 مهارات رئيسية شائعة للاختيار التفاعلي المتعدد (حد أقصى 4 مقترحات)
 const POPULAR_SKILLS = [
@@ -105,9 +105,15 @@ export default function HeroQuickRequest() {
   const submitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isLoggedIn && (!fullName.trim() || !phone.trim())) {
-      setErrorMessage('يرجى إدخال اسمك الكامل ورقم الواتساب للتواصل معك فور افتتاح الدورة.');
-      return;
+    if (!isLoggedIn) {
+      if (!fullName.trim() || !phone.trim()) {
+        setErrorMessage('يرجى إدخال اسمك الكامل ورقم الواتساب للتواصل معك فور افتتاح الدورة.');
+        return;
+      }
+      if (!isValidPhoneNumber(phone.trim())) {
+        setErrorMessage('يرجى التأكد من كتابة رقم الواتساب بشكل صحيح ومكتمل مع رمز الدولة.');
+        return;
+      }
     }
 
     setLoading(true);

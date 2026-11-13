@@ -31,19 +31,18 @@ function SendTrainingContent() {
   const courseIdParam = searchParams?.get("courseId") || "";
   const districtParam = searchParams?.get("district") || "All";
 
-  const isLegacyMsg = (m?: string) =>
-    !m ||
-    m.includes("وعم تبحث") ||
-    m.includes("🌿") ||
-    m.includes("📌") ||
-    m.includes("🔗") ||
-    m.includes("💡") ||
-    m.includes("🎉") ||
-    m.includes("🌸") ||
-    m.includes("\uFFFD") ||
-    m.includes("ًں") ||
-    m.includes("(منصة فرص التدريب") ||
-    m.includes("(فرص التدريب");
+  const isLegacyMsg = (m?: string) => {
+    if (!m) return true;
+    if (m.includes("حابين نخبرك إنه فتح التسجيل")) return false;
+    return (
+      m.includes("وعم تبحث") ||
+      m.includes("\uFFFD") ||
+      m.includes("ًں") ||
+      m.includes("(منصة فرص التدريب") ||
+      m.includes("(فرص التدريب") ||
+      m.includes("لأنك مسجل معنا وتبحث عن فرصة تطوّر فيها مهاراتك")
+    );
+  };
 
   const initialMsg = msgParam && !isLegacyMsg(msgParam) ? msgParam : DEFAULT_WHATSAPP_TEMPLATE;
 

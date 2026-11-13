@@ -1,39 +1,35 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ChevronDown, Phone } from "lucide-react";
+import PhoneInput, {
+  isValidPhoneNumber,
+  isPossiblePhoneNumber,
+  formatPhoneNumber,
+  formatPhoneNumberIntl,
+  type Country,
+} from "react-phone-number-input";
+import ar from "react-phone-number-input/locale/ar.json";
+import "react-phone-number-input/style.css";
+import { Check, AlertCircle } from "lucide-react";
 
-export interface CountryInfo {
-  code: string;
-  name: string;
-  dialCode: string;
-  flag: string;
-  formatPlaceholder: string;
-}
+export {
+  isValidPhoneNumber,
+  isPossiblePhoneNumber,
+  formatPhoneNumber,
+  formatPhoneNumberIntl,
+};
 
-export const COUNTRIES: CountryInfo[] = [
-  { code: "SY", name: "سورية", dialCode: "+963", flag: "🇸🇾", formatPlaceholder: "9XX XXX XXX" },
-  { code: "TR", name: "تركيا", dialCode: "+90", flag: "🇹🇷", formatPlaceholder: "5XX XXX XXXX" },
-  { code: "LB", name: "لبنان", dialCode: "+961", flag: "🇱🇧", formatPlaceholder: "XX XXX XXX" },
-  { code: "JO", name: "الأردن", dialCode: "+962", flag: "🇯🇴", formatPlaceholder: "7X XXX XXXX" },
-  { code: "IQ", name: "العراق", dialCode: "+964", flag: "🇮🇶", formatPlaceholder: "7XX XXX XXXX" },
-  { code: "SA", name: "السعودية", dialCode: "+966", flag: "🇸🇦", formatPlaceholder: "5X XXX XXXX" },
-  { code: "AE", name: "الإمارات", dialCode: "+971", flag: "🇦🇪", formatPlaceholder: "5X XXX XXXX" },
-  { code: "EG", name: "مصر", dialCode: "+20", flag: "🇪🇬", formatPlaceholder: "1X XXXX XXXX" },
-  { code: "QA", name: "قطر", dialCode: "+974", flag: "🇶🇦", formatPlaceholder: "XX XXX XXX" },
-  { code: "KW", name: "الكويت", dialCode: "+965", flag: "🇰🇼", formatPlaceholder: "X XXX XXXX" },
-  { code: "DE", name: "ألمانيا", dialCode: "+49", flag: "🇩🇪", formatPlaceholder: "1XX XXXXXXX" },
-  { code: "NL", name: "هولندا", dialCode: "+31", flag: "🇳🇱", formatPlaceholder: "6 XXXXXXXX" },
-  { code: "SE", name: "السويد", dialCode: "+46", flag: "🇸🇪", formatPlaceholder: "7X XXX XX XX" },
-  { code: "OTHER", name: "رمز دولي آخر", dialCode: "+", flag: "🌐", formatPlaceholder: "رقم دولي كامل" },
-];
-
-interface CountryPhoneInputProps {
+export interface CountryPhoneInputProps {
   value: string;
   onChange: (fullNumber: string) => void;
   required?: boolean;
   className?: string;
   id?: string;
+  name?: string;
+  placeholder?: string;
+  defaultCountry?: Country;
+  showValidationHint?: boolean;
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 export default function CountryPhoneInput({
@@ -42,118 +38,81 @@ export default function CountryPhoneInput({
   required = false,
   className = "",
   id = "phone-input",
+  name = "phone",
+  placeholder = "مثال: 0944 112 233",
+  defaultCountry = "SY",
+  showValidationHint = true,
+  onValidationChange,
 }: CountryPhoneInputProps) {
-  const [selectedCountry, setSelectedCountry] = useState<CountryInfo>(COUNTRIES[0]); // default Syria
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [touched, setTouched] = useState(false);
 
-  // Parse initial or incoming full value
+  const cleanValue = value || "";
+  const isValid = cleanValue ? isValidPhoneNumber(cleanValue) : !required;
+  const isTooShort = cleanValue.length > 0 && cleanValue.length < 8;
+
   useEffect(() => {
-    if (!value) {
-      setPhoneNumber("");
-      return;
+    if (onValidationChange) {
+      onValidationChange(isValid);
     }
+  }, [isValid, onValidationChange]);
 
-    // Check if starts with a known dial code
-    const matched = COUNTRIES.find(
-      (c) => c.code !== "OTHER" && value.startsWith(c.dialCode)
-    );
-
-    if (matched) {
-      setSelectedCountry(matched);
-      setPhoneNumber(value.slice(matched.dialCode.length).trim());
-    } else if (value.startsWith("+")) {
-      setSelectedCountry(COUNTRIES.find((c) => c.code === "OTHER") || COUNTRIES[0]);
-      setPhoneNumber(value.slice(1).trim());
-    } else {
-      // Local number, default Syria unless Turkish prefix
-      if (value.startsWith("05") || value.startsWith("5")) {
-        setSelectedCountry(COUNTRIES[1]); // Turkey
-        setPhoneNumber(value.replace(/^0/, ""));
-      } else {
-        setSelectedCountry(COUNTRIES[0]); // Syria
-        setPhoneNumber(value.replace(/^0/, ""));
-      }
-    }
-  }, []);
-
-  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const country = COUNTRIES.find((c) => c.code === e.target.value) || COUNTRIES[0];
-    setSelectedCountry(country);
-    combineAndPropagate(country, phoneNumber);
-  };
-
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let raw = e.target.value.replace(/[^0-9]/g, "");
-
-    // Smart auto-detection: if user enters 09... in Syria, strip leading 0
-    if (selectedCountry.code === "SY" && raw.startsWith("09")) {
-      raw = raw.substring(1);
-    }
-    // If user enters 05... while Turkey is selected, strip leading 0
-    if (selectedCountry.code === "TR" && raw.startsWith("05")) {
-      raw = raw.substring(1);
-    }
-    // If user pastes a Turkish number starting with 05 while Syria is selected, auto-switch to Turkey
-    if (selectedCountry.code === "SY" && raw.startsWith("05") && raw.length >= 10) {
-      const turkey = COUNTRIES[1];
-      setSelectedCountry(turkey);
-      const cleaned = raw.substring(1);
-      setPhoneNumber(cleaned);
-      combineAndPropagate(turkey, cleaned);
-      return;
-    }
-
-    setPhoneNumber(raw);
-    combineAndPropagate(selectedCountry, raw);
-  };
-
-  const combineAndPropagate = (country: CountryInfo, num: string) => {
-    const cleanNum = num.replace(/^0+/, "");
-    if (!cleanNum) {
-      onChange("");
-      return;
-    }
-    const combined = `${country.dialCode}${cleanNum}`;
-    onChange(combined);
+  const handleChange = (val?: string) => {
+    setTouched(true);
+    onChange(val || "");
   };
 
   return (
-    <div
-      className={`flex items-center rounded-xl border border-slate-200 bg-white shadow-2xs overflow-hidden focus-within:ring-2 focus-within:ring-[#123D3A]/20 focus-within:border-[#123D3A] transition ${className}`}
-    >
-      {/* Country Flag & Dial Code Select */}
-      <div className="relative flex items-center bg-slate-50 border-l border-slate-200 px-2 py-2 shrink-0 select-none hover:bg-slate-100 transition cursor-pointer">
-        <span className="text-base mr-1">{selectedCountry.flag}</span>
-        <span className="text-xs font-mono font-bold text-slate-700 ml-1" dir="ltr">
-          {selectedCountry.dialCode}
-        </span>
-        <ChevronDown className="w-3.5 h-3.5 text-slate-400 mr-1" />
+    <div className={`space-y-1.5 talaqi-phone-input ${className}`}>
+      <div
+        className={`relative flex items-center rounded-xl border bg-white shadow-2xs overflow-hidden transition-all duration-150 ${
+          touched && cleanValue && !isValid
+            ? "border-amber-400 focus-within:ring-2 focus-within:ring-amber-400/20 focus-within:border-amber-500"
+            : touched && cleanValue && isValid
+            ? "border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 focus-within:border-emerald-600"
+            : "border-slate-200 focus-within:ring-2 focus-within:ring-[#123D3A]/20 focus-within:border-[#123D3A]"
+        }`}
+      >
+        <PhoneInput
+          id={id}
+          name={name}
+          international
+          withCountryCallingCode
+          defaultCountry={defaultCountry}
+          labels={ar}
+          value={cleanValue}
+          onChange={handleChange}
+          onBlur={() => setTouched(true)}
+          placeholder={placeholder}
+          className="w-full flex items-center text-xs sm:text-sm"
+        />
 
-        <select
-          value={selectedCountry.code}
-          onChange={handleCountryChange}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer text-xs"
-          title="اختر الدولة"
-        >
-          {COUNTRIES.map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.flag} {c.name} ({c.dialCode})
-            </option>
-          ))}
-        </select>
+        {/* Validation Icon Badge */}
+        {touched && cleanValue && (
+          <div className="pl-3 pr-1 flex items-center shrink-0">
+            {isValid ? (
+              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs">
+                <Check className="w-3 h-3 stroke-[3]" />
+              </span>
+            ) : (
+              <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs">
+                <AlertCircle className="w-3 h-3" />
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Phone Number Input */}
-      <input
-        id={id}
-        type="tel"
-        dir="ltr"
-        required={required}
-        value={phoneNumber}
-        onChange={handleNumberChange}
-        placeholder={selectedCountry.formatPlaceholder}
-        className="w-full text-xs sm:text-sm font-mono font-semibold px-3 py-2.5 bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none"
-      />
+      {/* Validation Feedback Messages */}
+      {showValidationHint && touched && cleanValue && !isValid && (
+        <p className="text-[11px] font-medium text-amber-600 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3 shrink-0" />
+          <span>
+            {isTooShort
+              ? "رقم الهاتف غير مكتمل، يرجى كتابة الرقم كاملاً"
+              : "يرجى التحقق من صحة الرقم ورمز الدولة المحدد"}
+          </span>
+        </p>
+      )}
     </div>
   );
 }

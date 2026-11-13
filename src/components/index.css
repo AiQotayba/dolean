@@ -93,3 +93,82 @@ body {
   background-color: #F8F8F5;
   color: #123D3A;
 }
+
+/* react-phone-number-input custom styling */
+.talaqi-phone-input .PhoneInput {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+}
+
+.talaqi-phone-input .PhoneInputCountry {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.625rem 0.75rem;
+  background-color: #f8fafc;
+  border-left: 1px solid #e2e8f0;
+  border-top-right-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.talaqi-phone-input .PhoneInputCountry:hover {
+  background-color: #f1f5f9;
+}
+
+.talaqi-phone-input .PhoneInputCountrySelect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 10;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.talaqi-phone-input .PhoneInputCountryIcon {
+  width: 1.4rem;
+  height: 0.95rem;
+  border-radius: 2px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.talaqi-phone-input .PhoneInputCountrySelectArrow {
+  display: block;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-bottom: 2px solid #64748b;
+  border-right: 2px solid #64748b;
+  transform: rotate(45deg);
+  margin-top: -2px;
+  opacity: 0.8;
+}
+
+.talaqi-phone-input .PhoneInputInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0.625rem 0.875rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  direction: ltr;
+  text-align: left;
+}
+
+.talaqi-phone-input .PhoneInputInput::placeholder {
+  color: #94a3b8;
+  direction: rtl;
+  text-align: right;
+  font-weight: 400;
+}

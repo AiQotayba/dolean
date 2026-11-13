@@ -24,7 +24,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import CountryPhoneInput from '@/components/forms-client/CountryPhoneInput';
+import CountryPhoneInput, { isValidPhoneNumber } from '@/components/forms-client/CountryPhoneInput';
 
 // 4 مهارات رئيسية شائعة للاختيار التفاعلي المتعدد (حد أقصى 4 مقترحات تطبيقاً لفلسفة المنصة)
 const POPULAR_SKILLS = [
@@ -132,8 +132,8 @@ function ApplyForm() {
         setErrorMsg('يرجى إدخال اسمك الكريم.');
         return;
       }
-      if (!phone.trim() || phone.replace(/\D/g, '').length < 7) {
-        setErrorMsg('يرجى إدخال رقم واتساب صحيح للتواصل معك.');
+      if (!phone.trim() || !isValidPhoneNumber(phone.trim())) {
+        setErrorMsg('يرجى إدخال رقم واتساب صحيح ومتكامل مع رمز الدولة.');
         return;
       }
     }

@@ -221,7 +221,10 @@ export default function Step3WhatsAppDispatch({
       studentInterest: student.interests,
     });
 
-    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(personalized)}`;
+    const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const waUrl = isMobile
+      ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(personalized)}`
+      : `https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(personalized)}`;
     window.open(waUrl, "_blank", "noopener,noreferrer");
     markAsSent(student._id);
   };
